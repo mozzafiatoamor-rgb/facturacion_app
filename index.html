@@ -264,10 +264,10 @@ const Sheets={
 
     // Promise.allSettled: cada hoja carga independientemente — una hoja faltante no bloquea las demás
     const[rCli,rSol,rUsr,rBit]=await Promise.allSettled([
-      this.read('👥 Clientes!A2:H300'),
+      this.read('👥 Clientes!A2:H1000'),
       this.read('🧾 Solicitudes!A2:P1000'),
       this.read('👤 Usuarios!A2:E50'),
-      this.read('📜 Bitácora!A2:F500')
+      this.read('📜 Bitácora!A2:F1000')
     ]);
 
     const val=(r,name)=>{
