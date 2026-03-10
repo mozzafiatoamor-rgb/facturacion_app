@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mozzafiato Facturas</title>
+<style>
+:root{--bg:#1a120e;--surface:#2a1e18;--surface2:#3a2d25;--border:rgba(255,255,255,.1);--text:#f5ede8;--muted:#9a8680;--primary:#e8623a;--primary-dark:#c44d28;--green:#34d399;--red:#f87171;--yellow:#fbbf24;--blue:#60a5fa;--purple:#a78bfa;--radius:12px;--shadow:0 4px 20px rgba(0,0,0,.4)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+#app{min-height:100dvh}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100}
+.header-title{font-size:18px;font-weight:700;flex:1}
+.header-sub{font-size:12px;color:var(--muted)}
+.status-dot{width:10px;height:10px;border-radius:50%;background:var(--green);transition:background .3s;flex-shrink:0;cursor:default}
+.screen{padding:20px 16px;max-width:500px;margin:0 auto}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:500}
+.field input,.field select,.field textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:16px;font-family:inherit;outline:none;transition:border-color .2s;-webkit-appearance:none;appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--primary)}
+.field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239a8680' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.field select option{background:var(--surface2)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:10px;border:none;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:opacity .15s,transform .1s;text-align:center}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{opacity:.9}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.btn-success{background:var(--green);color:#1a120e}
+.btn-danger{background:var(--red);color:#fff}
+.btn-blue{background:var(--blue);color:#1a120e}
+.btn-full{width:100%}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:8px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;font-size:12px;font-weight:600}
+.badge-yellow{background:rgba(251,191,36,.15);color:var(--yellow)}
+.badge-green{background:rgba(52,211,153,.15);color:var(--green)}
+.badge-red{background:rgba(248,113,113,.15);color:var(--red)}
+.badge-blue{background:rgba(96,165,250,.15);color:var(--blue)}
+.badge-purple{background:rgba(167,139,250,.15);color:var(--purple)}
+.badge-muted{background:rgba(154,134,128,.15);color:var(--muted)}
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface2);color:var(--text);padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;z-index:1000;transition:transform .3s;border:1px solid var(--border);white-space:nowrap;max-width:90vw;text-align:center;box-shadow:var(--shadow)}
+#toast.show{transform:translateX(-50%) translateY(0)}
+#toast.error{border-color:var(--red);color:var(--red)}
+#working{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:900;align-items:center;justify-content:center;flex-direction:column;gap:12px}
+#working.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.autocomplete-wrap{position:relative}
+.autocomplete-list{position:absolute;top:100%;left:0;right:0;background:var(--surface2);border:1px solid var(--primary);border-top:none;border-radius:0 0 8px 8px;z-index:50;max-height:200px;overflow-y:auto}
+.autocomplete-item{padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.autocomplete-item:last-child{border-bottom:none}
+.autocomplete-item:hover,.autocomplete-item:active{background:rgba(232,98,58,.1)}
+.autocomplete-item .rfc-code{font-weight:700;font-size:14px}
+.autocomplete-item .rfc-name{font-size:12px;color:var(--muted);margin-top:2px}
+.user-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:16px}
+.user-btn{background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;text-align:center;transition:border-color .2s,background .2s}
+.user-btn:active{background:rgba(232,98,58,.1)}
+.user-btn.selected{border-color:var(--primary);background:rgba(232,98,58,.1)}
+.user-btn .user-name{font-weight:600;font-size:15px}
+.user-btn .user-role{font-size:12px;color:var(--muted);margin-top:4px}
+.user-avatar{width:40px;height:40px;border-radius:50%;background:var(--primary);color:#fff;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center;margin:0 auto 8px}
+.pin-display{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:background .2s,border-color .2s}
+.pin-dot.filled{background:var(--primary);border-color:var(--primary)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;margin:0 auto}
+.pin-key{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;font-size:20px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);transition:background .15s}
+.pin-key:active{background:rgba(232,98,58,.2)}
+.pin-key.del{font-size:14px;color:var(--muted)}
+.pin-key.ok{background:var(--primary);color:#fff}
+.tabs{display:flex;gap:4px;background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px 0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab-btn{padding:8px 14px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--muted);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;margin-bottom:-1px}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+.sol-list{display:flex;flex-direction:column;gap:10px}
+.sol-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.sol-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sol-id{font-size:12px;color:var(--muted)}
+.sol-rfc{font-weight:700;font-size:15px}
+.sol-razon{font-size:13px;color:var(--muted);margin-bottom:6px}
+.sol-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.sol-field{font-size:12px}
+.sol-field span{color:var(--muted);margin-right:4px}
+.sol-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.cliente-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.monto-display{text-align:center;padding:24px 0}
+.success-icon{text-align:center;font-size:72px;margin-bottom:16px}
+.success-title{text-align:center;font-size:24px;font-weight:700;color:var(--green);margin-bottom:8px}
+.success-sub{text-align:center;font-size:14px;color:var(--muted);margin-bottom:24px}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.filter-chip{padding:6px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.filter-chip.active{border-color:var(--primary);color:var(--primary);background:rgba(232,98,58,.1)}
+.setup-logo{height:72px;width:auto;max-width:220px;object-fit:contain;display:block;margin:0 auto 12px}
+.setup-logo-fallback{text-align:center;font-size:52px;margin-bottom:12px}
+.setup-title{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
+.setup-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+.app-logo{height:32px;width:auto;object-fit:contain;flex-shrink:0}
+.working-logo{height:56px;width:auto;object-fit:contain;margin-bottom:4px}
+.row{display:flex;gap:10px}
+.row .field{flex:1}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.scroll-area{padding:16px;padding-bottom:32px;max-width:600px;margin:0 auto}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-state .icon{font-size:40px;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.new-client-banner{background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--purple);margin-bottom:16px}
+.data-summary{background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px}
+.data-summary .ds-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.data-summary .ds-row:last-child{border-bottom:none}
+.data-summary .ds-label{color:var(--muted);font-size:13px}
+.data-summary .ds-value{font-weight:600;text-align:right;max-width:65%}
+.search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:15px;font-family:inherit;outline:none;margin-bottom:14px}
+.search-input:focus{border-color:var(--primary)}
+.step-indicator{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 0;margin-bottom:8px}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s}
+.step-dot.active{background:var(--primary);width:24px;border-radius:4px}
+.step-dot.done{background:var(--green)}
+.pago-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:4px}
+.pago-btn{background:var(--surface2);border:2px solid var(--border);border-radius:10px;padding:12px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text);font-size:13px;font-weight:600;transition:border-color .2s,background .2s}
+.pago-btn:active{background:rgba(232,98,58,.1)}
+.pago-btn.selected{border-color:var(--primary);background:rgba(232,98,58,.1);color:var(--primary)}
+.pago-btn .pago-icon{font-size:22px;display:block;margin-bottom:4px}
+@media(max-width:400px){.user-grid{grid-template-columns:1fr 1fr}.pago-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<div id="working"><img src="logo.png" class="working-logo" onerror="this.style.display='none'"><div class="spinner"></div><div style="font-size:14px;color:var(--muted)">Guardando...</div></div>
+<script>
+// ============================================================
+// MOZZAFIATO FACTURAS v1.0
+// Arquitectura: SyncQueue + batchAppend + Promise.all (local-first)
+// ============================================================
+
+const CFG_KEY='_mzf_facturas_config';
+const SYNC_KEY='_mzf_facturas_sync';
+const LOGO='logo.png';
+
+function loadConfig(){try{return JSON.parse(localStorage.getItem(CFG_KEY)||'null')}catch(e){return null}}
+function saveConfig(c){localStorage.setItem(CFG_KEY,JSON.stringify(c))}
+
+// ── STATE
+const S={
+  screen:'setup',
+  config:null,
+  user:null,
+  clientes:[],solicitudes:[],usuarios:[],bitacora:[],
+  currentOrder:null,
+  currentCliente:null,
+  isNewCliente:false,
+  loading:false,connected:false,
+  tab:'solicitudes',filterStatus:'all',
+  rfcInput:'',rfcSuggestions:[],
+  pinInput:'',selectedUser:null,
+  adminSearch:'',
+  showMeseroPin:false,meseroPinBuf:'',
+  clienteModificado:false,
+  _syncRetryCount:0
+};
+
+// ── SAT CATÁLOGOS
+const REGIMENES=[
+  {clave:'601',desc:'General de Ley Personas Morales'},
+  {clave:'603',desc:'Personas Morales con Fines no Lucrativos'},
+  {clave:'605',desc:'Sueldos y Salarios e Ingresos Asimilados a Salarios'},
+  {clave:'606',desc:'Arrendamiento'},
+  {clave:'607',desc:'Régimen de Enajenación o Adquisición de Bienes'},
+  {clave:'608',desc:'Demás ingresos'},
+  {clave:'610',desc:'Residentes en el Extranjero sin Establecimiento Permanente'},
+  {clave:'611',desc:'Ingresos por Dividendos (socios y accionistas)'},
+  {clave:'612',desc:'Personas Físicas con Actividades Empresariales y Profesionales'},
+  {clave:'614',desc:'Ingresos por intereses'},
+  {clave:'615',desc:'Régimen de los ingresos por obtención de premios'},
+  {clave:'616',desc:'Sin obligaciones fiscales'},
+  {clave:'620',desc:'Sociedades Cooperativas de Producción'},
+  {clave:'621',desc:'Incorporación Fiscal'},
+  {clave:'622',desc:'Actividades Agrícolas, Ganaderas, Silvícolas y Pesqueras'},
+  {clave:'623',desc:'Opcional para Grupos de Sociedades'},
+  {clave:'624',desc:'Coordinados'},
+  {clave:'625',desc:'Actividades Empresariales vía Plataformas Tecnológicas'},
+  {clave:'626',desc:'Régimen Simplificado de Confianza (RESICO)'},
+  {clave:'628',desc:'Hidrocarburos'}
+];
+
+const USOS_CFDI=[
+  {clave:'G01',desc:'Adquisición de mercancias'},
+  {clave:'G02',desc:'Devoluciones, descuentos o bonificaciones'},
+  {clave:'G03',desc:'Gastos en general'},
+  {clave:'I01',desc:'Construcciones'},
+  {clave:'I02',desc:'Mobilario y equipo de oficina por inversiones'},
+  {clave:'I03',desc:'Equipo de transporte'},
+  {clave:'I04',desc:'Equipo de computo y accesorios'},
+  {clave:'I05',desc:'Dados, troqueles, moldes, matrices y herramental'},
+  {clave:'I06',desc:'Comunicaciones telefónicas'},
+  {clave:'I07',desc:'Comunicaciones satelitales'},
+  {clave:'I08',desc:'Otra maquinaria y equipo'},
+  {clave:'D01',desc:'Honorarios médicos, dentales y gastos hospitalarios'},
+  {clave:'D02',desc:'Gastos médicos por incapacidad o discapacidad'},
+  {clave:'D03',desc:'Gastos funerales'},
+  {clave:'D04',desc:'Donativos'},
+  {clave:'D05',desc:'Intereses reales por créditos hipotecarios (casa habitación)'},
+  {clave:'D06',desc:'Aportaciones voluntarias al SAR'},
+  {clave:'D07',desc:'Primas por seguros de gastos médicos'},
+  {clave:'D08',desc:'Gastos de transportación escolar obligatoria'},
+  {clave:'D09',desc:'Depósitos en cuentas para el ahorro y planes de pensiones'},
+  {clave:'D10',desc:'Pagos por servicios educativos (colegiaturas)'},
+  {clave:'S01',desc:'Sin efectos fiscales'},
+  {clave:'CP01',desc:'Pagos'},
+  {clave:'CN01',desc:'Nómina'}
+];
+
+const TIPOS_PAGO=[
+  {clave:'Efectivo',icon:'💵',label:'Efectivo'},
+  {clave:'Tarjeta Débito',icon:'💳',label:'Tarjeta Débito'},
+  {clave:'Tarjeta Crédito',icon:'💳',label:'Tarjeta Crédito'},
+  {clave:'Transferencia',icon:'📲',label:'Transferencia'}
+];
+
+// ── HELPERS
+function now(){
+  const d=new Date();
+  const date=d.toLocaleDateString('es-MX',{year:'numeric',month:'2-digit',day:'2-digit'});
+  const time=d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',hour12:false});
+  return{date,time};
+}
+function fmt$(n){return'$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function uName(){return S.user?S.user.nombre:'Desconocido'}
+function nextId(prefix,arr){
+  const max=arr.reduce((m,i)=>{const n=parseInt((i.id||'0').replace(prefix,''));return n>m?n:m},0);
+  return prefix+(max+1);
+}
+function toast(msg,isErr){
+  const t=document.getElementById('toast');if(!t)return;
+  t.textContent=msg;t.className='show'+(isErr?' error':'');
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.className=''},3000);
+}
+function showWorking(){const w=document.getElementById('working');if(w)w.classList.add('show')}
+function hideWorking(){const w=document.getElementById('working');if(w)w.classList.remove('show')}
+
+// ── SHEETS API
+const Sheets={
+  get cfg(){return S.config||{}},
+  read(range){
+    const{sheetId,apiKey}=this.cfg;
+    if(!sheetId||!apiKey)return Promise.resolve([]);
+    const url=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(range)}?key=${apiKey}`;
+    return fetch(url).then(r=>r.json()).then(d=>{
+      // Si la API devuelve un error (hoja no existe, sin permiso, API key inválida, etc.)
+      if(d.error){
+        const msg=d.error.message||'Error desconocido';
+        console.warn('Sheets API error ['+range+']:', d.error.code, msg);
+        S._lastReadError=d.error.code+': '+msg; // guardamos el último error para diagnóstico
+        throw new Error(msg);
+      }
+      return d.values||[];
+    });
+  },
+  async loadAll(){
+    S.loading=true;S._sheetErrors={};render();
+    const{sheetId,apiKey}=this.cfg;
+    if(!sheetId||!apiKey){S.loading=false;render();return;}
+
+    // Promise.allSettled: cada hoja carga independientemente — una hoja faltante no bloquea las demás
+    const[rCli,rSol,rUsr,rBit]=await Promise.allSettled([
+      this.read('👥 Clientes!A2:H300'),
+      this.read('🧾 Solicitudes!A2:P1000'),
+      this.read('👤 Usuarios!A2:E50'),
+      this.read('📜 Bitácora!A2:F500')
+    ]);
+
+    const val=(r,name)=>{
+      if(r.status==='fulfilled')return r.value;
+      S._sheetErrors[name]=r.reason?.message||'Error';
+      console.error('Error cargando hoja ['+name+']:',r.reason);
+      return[];
+    };
+
+    const cli=val(rCli,'👥 Clientes');
+    const sol=val(rSol,'🧾 Solicitudes');
+    const usr=val(rUsr,'👤 Usuarios');
+    const bit=val(rBit,'📜 Bitácora');
+
+    // Regimen y UsoCFDI se guardan como "626 - Descripción" en el sheet → extraer solo el código para la UI
+    S.clientes=cli.map((r,i)=>({id:r[0]||'',rfc:r[1]||'',razonSocial:r[2]||'',regimen:(r[3]||'').split(' - ')[0],usoCfdi:(r[4]||'').split(' - ')[0],email:r[5]||'',ultimaSol:r[6]||'',_row:i+2}));
+    S.solicitudes=sol.map((r,i)=>({id:r[0]||'',fecha:r[1]||'',hora:r[2]||'',mesa:r[3]||'',monto:r[4]||'',tipoPago:r[5]||'',rfc:r[6]||'',razonSocial:r[7]||'',regimen:(r[8]||'').split(' - ')[0],usoCfdi:(r[9]||'').split(' - ')[0],email:r[10]||'',status:r[11]||'Pendiente',mesero:r[12]||'',notas:r[13]||'',_row:i+2}));
+    S.usuarios=usr.map((r,i)=>({id:r[0]||'',nombre:r[1]||'',pin:(r[2]||'').toString(),rol:r[3]||'',activo:(r[4]||'true').toString().toUpperCase()!=='FALSE',_row:i+2}));
+    S.bitacora=bit.map((r,i)=>({fecha:r[0]||'',hora:r[1]||'',usuario:r[2]||'',accion:r[3]||'',detalle:r[4]||'',tipo:r[5]||'',_row:i+2}));
+
+    // Conectado = al menos Usuarios cargó (lo más crítico para el login)
+    const usrOk=rUsr.status==='fulfilled';
+    const anyOk=[rCli,rSol,rUsr,rBit].some(r=>r.status==='fulfilled');
+    S.connected=anyOk;
+
+    // Si hay errores de hojas, mostrar diagnóstico
+    const errCount=Object.keys(S._sheetErrors||{}).length;
+    if(errCount>0&&usrOk){
+      toast('⚠️ Algunas hojas no cargaron ('+errCount+'). Revisa los nombres.',1);
+    }else if(!anyOk){
+      toast('⚠️ Sin conexión al Sheet. Verifica configuración.',1);
+    }
+
+    S.loading=false;hideWorking();render();SyncQueue.process();
+  },
+  async batchAppend(items){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'batchAppend',items})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error batchAppend');return d;
+  },
+  async append(sheet,values){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'append',sheet,values})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error append');return d;
+  },
+  async updateStatus(solId,status,notas){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'updateStatus',solId,status,notas})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error updateStatus');return d;
+  },
+  async updateCliente(rfc,data){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'updateCliente',rfc,data})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error updateCliente');return d;
+  },
+  async sendConfirmation(solId){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'sendConfirmation',solId})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error sendConfirmation');return d;
+  },
+  async deleteRow(sheet,row){
+    const{scriptUrl}=this.cfg;if(!scriptUrl)throw new Error('Script URL no configurada');
+    const r=await fetch(scriptUrl,{method:'POST',body:JSON.stringify({action:'delete',sheet,row})});
+    const d=await r.json();if(!d.success)throw new Error(d.error||'Error delete');return d;
+  }
+};
+
+// ── SYNC QUEUE (local-first, exponential backoff)
+const SyncQueue={
+  get queue(){try{return JSON.parse(localStorage.getItem(SYNC_KEY)||'[]')}catch(e){return[]}},
+  set queue(v){localStorage.setItem(SYNC_KEY,JSON.stringify(v))},
+  processing:false,
+  add(items,onDone){
+    const q=this.queue;
+    q.push(...items.map(it=>({...it,_ts:Date.now()})));
+    this.queue=q;this.process(onDone);this.updateBadge();
+  },
+  async process(onDone){
+    if(this.processing)return;
+    const q=this.queue;if(!q.length){this.updateBadge();return;}
+    this.processing=true;this.updateBadge();
+    const batch=q.splice(0,50);this.queue=q;
+    try{
+      // Separate append items from special ops
+      const appendBatch=batch.filter(it=>it._type==='append');
+      const specialBatch=batch.filter(it=>it._type!=='append');
+      // Batch all appends in one call
+      if(appendBatch.length){
+        const grouped={};
+        appendBatch.forEach(it=>{if(!grouped[it.sheet])grouped[it.sheet]=[];grouped[it.sheet].push(it.values)});
+        const items=Object.keys(grouped).map(sh=>({sheet:sh,rows:grouped[sh]}));
+        try{await Sheets.batchAppend(items)}
+        catch(batchErr){for(const it of appendBatch){await Sheets.append(it.sheet,it.values)}}
+      }
+      // Special ops sequentially
+      for(const op of specialBatch){
+        if(op._type==='updateStatus')await Sheets.updateStatus(op.solId,op.status,op.notas||'');
+        else if(op._type==='updateCliente')await Sheets.updateCliente(op.rfc,op.data);
+        else if(op._type==='sendConfirmation')await Sheets.sendConfirmation(op.solId);
+      }
+      S._syncRetryCount=0;this.updateBadge();
+      if(onDone)onDone(true);
+      if(this.queue.length)this.process();
+    }catch(e){
+      console.error('SyncQueue error',e);toast('⚠️ Sync: '+e.message,1);
+      S._syncRetryCount++;const delay=Math.min(2000*Math.pow(2,S._syncRetryCount),30000);
+      const q2=this.queue;q2.unshift(...batch);this.queue=q2;
+      this.updateBadge();if(onDone)onDone(false);
+      setTimeout(()=>{this.processing=false;this.process()},delay);return;
+    }
+    this.processing=false;
+  },
+  get pending(){return this.queue.length},
+  updateBadge(){
+    const dot=document.querySelector('.status-dot');if(!dot)return;
+    const n=this.pending;
+    if(n>0){dot.style.background='var(--yellow)';dot.title=n+' pendientes de sync';}
+    else if(S.connected){dot.style.background='var(--green)';dot.title='Conectado';}
+    else{dot.style.background='var(--red)';dot.title='Desconectado';}
+  }
+};
+
+function logAction(accion,detalle,tipo){
+  const n=now();
+  SyncQueue.add([{_type:'append',sheet:'📜 Bitácora',values:[n.date,n.time,uName(),accion,detalle,tipo]}]);
+}
+
+// ── RENDER
+function render(){
+  const app=document.getElementById('app');if(!app)return;
+  if(!S.config&&S.screen!=='setup')S.screen='setup';
+  switch(S.screen){
+    case'setup':app.innerHTML=renderSetup();break;
+    case'login':app.innerHTML=renderLogin();break;
+    case'mesero':app.innerHTML=renderMesero();break;
+    case'cliente':app.innerHTML=renderCliente();break;
+    case'confirm':app.innerHTML=renderConfirm();break;
+    case'success':app.innerHTML=renderSuccess();break;
+    case'admin':app.innerHTML=renderAdmin();break;
+    default:app.innerHTML=renderSetup();
+  }
+}
+
+// ── SCREEN: SETUP
+function renderSetup(){
+  const cfg=loadConfig()||{};
+  return`<div class="screen" style="padding-top:40px;">
+  <img src="${LOGO}" class="setup-logo" onerror="this.outerHTML='<div class=setup-logo-fallback>🧾</div>'">
+  <div class="setup-title">Mozzafiato Facturas</div>
+  <div class="setup-sub">Configura la conexión con Google Sheets</div>
+  <div class="card">
+    <div class="card-title">Configuración</div>
+    <div class="field"><label>ID del Spreadsheet</label><input id="cfg-sheetId" type="text" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" value="${cfg.sheetId||''}" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label>API Key (Google Sheets)</label><input id="cfg-apiKey" type="text" placeholder="AIzaSy..." value="${cfg.apiKey||''}" autocomplete="off" spellcheck="false"></div>
+    <div class="field"><label>URL del Apps Script (doPost)</label><input id="cfg-scriptUrl" type="url" placeholder="https://script.google.com/macros/s/..." value="${cfg.scriptUrl||''}" autocomplete="off" spellcheck="false"></div>
+    <button class="btn btn-primary btn-full" onclick="saveSetup()">Guardar y Continuar</button>
+  </div>
+  <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--muted);line-height:1.8;">
+    Hojas requeridas en el Spreadsheet:<br>
+    <strong style="color:var(--text)">👥 Clientes · 🧾 Solicitudes · 👤 Usuarios · 📜 Bitácora</strong>
+  </div>
+  </div>`;
+}
+
+function saveSetup(){
+  const sheetId=document.getElementById('cfg-sheetId')?.value.trim();
+  const apiKey=document.getElementById('cfg-apiKey')?.value.trim();
+  const scriptUrl=document.getElementById('cfg-scriptUrl')?.value.trim();
+  if(!sheetId||!apiKey||!scriptUrl){toast('Completa todos los campos',1);return;}
+  S.config={sheetId,apiKey,scriptUrl};saveConfig(S.config);
+  toast('✅ Configuración guardada');S.screen='login';Sheets.loadAll();render();
+}
+
+// ── SCREEN: LOGIN
+function renderLogin(){
+  const active=S.usuarios.filter(u=>u.activo);
+  const dots=[0,1,2,3].map(i=>`<div class="pin-dot ${i<S.pinInput.length?'filled':''}"></div>`).join('');
+
+  // Decide qué mostrar en el área de usuarios
+  let usersArea='';
+  if(S.loading){
+    usersArea=`<div style="text-align:center;padding:40px;">
+      <div class="spinner" style="margin:0 auto 12px;"></div>
+      <div style="color:var(--muted);font-size:14px;">Conectando con el Sheet...</div>
+    </div>`;
+  } else if(!S.connected){
+    usersArea=`<div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:36px;margin-bottom:8px;">⚠️</div>
+      <div style="font-weight:700;color:var(--red);margin-bottom:4px;">Error de conexión</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;">
+        No se pudo conectar al Sheet.<br>Verifica que el Sheet ID, API Key y URL del Script sean correctos y que la hoja sea accesible.
+      </div>
+      <button class="btn btn-primary btn-full" onclick="Sheets.loadAll()" style="margin-bottom:8px;">↺ Reintentar conexión</button>
+      <button class="btn btn-secondary btn-full" onclick="S.screen='setup';render()">⚙️ Revisar configuración</button>
+    </div>`;
+  } else if(active.length===0){
+    // Distinguir: ¿hubo error leyendo Usuarios, o la hoja existe pero está vacía?
+    const usrErr=(S._sheetErrors||{})['👤 Usuarios'];
+    usersArea=`<div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;">
+      <div style="font-size:36px;margin-bottom:8px;">${usrErr?'⚠️':'👤'}</div>
+      <div style="font-weight:700;margin-bottom:6px;">${usrErr?'Error al leer hoja de Usuarios':'Sin usuarios configurados'}</div>
+      ${usrErr?`<div style="font-size:12px;color:var(--red);background:rgba(248,113,113,.1);border-radius:6px;padding:8px;margin-bottom:10px;">${usrErr}</div>`:''}
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;text-align:left;">
+        La pestaña debe llamarse exactamente:<br>
+        <code style="background:var(--surface2);padding:3px 8px;border-radius:4px;font-size:14px;display:inline-block;margin:4px 0;">👤 Usuarios</code><br>
+        Con las columnas en fila 1:<br>
+        <code style="background:var(--surface2);padding:3px 8px;border-radius:4px;font-size:12px;display:inline-block;margin:4px 0;">ID &nbsp; Nombre &nbsp; PIN &nbsp; Rol &nbsp; Activo</code>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="Sheets.loadAll()" style="margin-top:12px;">↺ Reintentar</button>
+    </div>
+    ${Object.keys(S._sheetErrors||{}).length>0?`<div style="font-size:12px;color:var(--muted);background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:12px;">
+      <strong>Diagnóstico de hojas:</strong><br>
+      ${['👥 Clientes','🧾 Solicitudes','👤 Usuarios','📜 Bitácora'].map(h=>
+        `${(S._sheetErrors||{})[h]?'❌':'✅'} ${h}${(S._sheetErrors||{})[h]?' — <span style="color:var(--red)">'+((S._sheetErrors||{})[h])+'</span>':''}`
+      ).join('<br>')}
+    </div>`:''}`;
+  } else {
+    usersArea=`<div class="user-grid">${active.map(u=>`
+      <div class="user-btn ${S.selectedUser?.id===u.id?'selected':''}" onclick="selectUser('${u.id}')">
+        <div class="user-avatar">${(u.nombre[0]||'?').toUpperCase()}</div>
+        <div class="user-name">${u.nombre}</div>
+        <div class="user-role">${rolLabel(u.rol)}</div>
+      </div>`).join('')}</div>`;
+  }
+
+  return`
+  <div class="header">
+    <img src="${LOGO}" class="app-logo" onerror="this.outerHTML='<span style=font-size:22px>🧾</span>'">
+    <div style="flex:1;"><div class="header-title">Mozzafiato Facturas</div></div>
+    <div class="status-dot" style="background:${S.loading?'var(--yellow)':S.connected?'var(--green)':'var(--red)'}" title="${S.loading?'Conectando...':S.connected?'Conectado':'Sin conexión'}"></div>
+    <button class="btn btn-sm btn-secondary" onclick="S.screen='setup';render()">⚙️</button>
+  </div>
+  <div class="screen" style="padding-top:24px;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:24px;font-weight:700;">Iniciar Sesión</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Selecciona tu usuario</div>
+    </div>
+    ${usersArea}
+    ${S.selectedUser?`
+    <div class="card" style="margin-top:4px;">
+      <div style="text-align:center;margin-bottom:16px;font-size:14px;color:var(--muted);">PIN de <strong>${S.selectedUser.nombre}</strong></div>
+      <div class="pin-display">${dots}</div>
+      <div class="pin-pad">
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-key" onclick="pinPress('${n}')">${n}</button>`).join('')}
+        <button class="pin-key del" onclick="pinDel()">⌫</button>
+        <button class="pin-key" onclick="pinPress('0')">0</button>
+        <button class="pin-key ok" onclick="pinOk()">OK</button>
+      </div>
+    </div>`:''}
+    ${!S.loading&&(!S.connected||active.length===0)?`
+    <div style="text-align:center;margin-top:16px;">
+      <button class="btn btn-secondary btn-sm" onclick="guestLogin()">Entrar como invitado</button>
+    </div>`:''}
+  </div>`;
+}
+
+function rolLabel(rol){return{mesero:'🍽️ Mesero',admin:'⚙️ Admin',contable:'📊 Contable'}[rol]||rol}
+function selectUser(id){S.selectedUser=S.usuarios.find(u=>u.id===id)||null;S.pinInput='';render()}
+function pinPress(n){if(S.pinInput.length>=4)return;S.pinInput+=n;render();if(S.pinInput.length===4)setTimeout(pinOk,200)}
+function pinDel(){S.pinInput=S.pinInput.slice(0,-1);render()}
+function pinOk(){
+  if(!S.selectedUser)return;
+  if(S.selectedUser.pin&&S.selectedUser.pin!==S.pinInput){toast('PIN incorrecto',1);S.pinInput='';render();return;}
+  doLogin(S.selectedUser);
+}
+function guestLogin(){doLogin({id:'guest',nombre:'Invitado',rol:'mesero',pin:''})}
+function doLogin(user){
+  S.user=user;S.selectedUser=null;S.pinInput='';
+  S.screen=(user.rol==='admin'||user.rol==='contable')?'admin':'mesero';
+  logAction('Login',user.nombre,'auth');toast('Bienvenido, '+user.nombre);render();
+}
+
+// ── SCREEN: MESERO
+function renderMesero(){
+  const recent=S.solicitudes.filter(s=>s.mesero===uName()).slice(-5).reverse();
+  return`
+  ${renderHeader('🍽️ Mesero',S.user?.nombre||'')}
+  <div class="screen" style="padding-top:20px;">
+    <div class="step-indicator"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div><div class="step-dot"></div></div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:20px;font-weight:700;">Nueva Solicitud de Factura</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:4px;">Ingresa los datos de la mesa</div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="field"><label>Mesa</label><input id="inp-mesa" type="text" inputmode="numeric" placeholder="Ej: 5" value="${S.currentOrder?.mesa||''}" autocomplete="off"></div>
+        <div class="field"><label>Monto a Facturar</label><input id="inp-monto" type="number" inputmode="decimal" placeholder="0.00" step="0.01" value="${S.currentOrder?.monto||''}" autocomplete="off"></div>
+      </div>
+      <div class="field">
+        <label>Tipo de Pago</label>
+        <div class="pago-grid">
+          ${TIPOS_PAGO.map(p=>`<button class="pago-btn ${S.currentOrder?.tipoPago===p.clave?'selected':''}" onclick="selPago('${p.clave}')"><span class="pago-icon">${p.icon}</span>${p.label}</button>`).join('')}
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="goToCliente()" style="margin-top:8px;">Pasar a Cliente →</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Solicitudes Recientes</div>
+      ${recent.length===0?'<div style="font-size:13px;color:var(--muted);text-align:center;padding:8px 0;">Sin solicitudes recientes</div>':
+        recent.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <div><div style="font-size:13px;font-weight:600;">Mesa ${s.mesa} · ${fmt$(s.monto)}</div><div style="font-size:12px;color:var(--muted);">${s.rfc} · ${s.fecha}</div></div>
+          ${statusBadge(s.status)}</div>`).join('')}
+    </div>
+    <div style="text-align:center;margin-top:4px;display:flex;gap:10px;justify-content:center;">
+      ${S.user?.rol==='admin'||S.user?.rol==='contable'?`<button class="btn btn-secondary btn-sm" onclick="S.screen='admin';S.tab='solicitudes';render()">Panel Admin</button>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Cerrar Sesión</button>
+    </div>
+  </div>`;
+}
+
+function selPago(tipo){
+  if(!S.currentOrder)S.currentOrder={mesa:'',monto:''};
+  S.currentOrder.tipoPago=tipo;render();
+  // Re-set input values after render
+  setTimeout(()=>{
+    const m=document.getElementById('inp-mesa');const mo=document.getElementById('inp-monto');
+    if(m)m.value=S.currentOrder.mesa||'';if(mo)mo.value=S.currentOrder.monto||'';
+  },10);
+}
+
+function goToCliente(){
+  const mesa=document.getElementById('inp-mesa')?.value.trim();
+  const monto=parseFloat(document.getElementById('inp-monto')?.value);
+  if(!mesa){toast('Ingresa el número de mesa',1);return;}
+  if(!monto||monto<=0){toast('Ingresa un monto válido',1);return;}
+  const tipoPago=S.currentOrder?.tipoPago||'';
+  if(!tipoPago){toast('Selecciona el tipo de pago',1);return;}
+  S.currentOrder={mesa,monto,mesero:uName(),tipoPago};
+  S.rfcInput='';S.rfcSuggestions=[];S.currentCliente=null;S.isNewCliente=false;
+  S.screen='cliente';render();
+}
+
+// ── SCREEN: CLIENTE
+// Fase 1 (!c): solo búsqueda de RFC
+// Fase 2 (c):  solo formulario fiscal — el RFC search desaparece para no confundir al cliente
+function renderCliente(){
+  const c=S.currentCliente;
+  const regSelect=REGIMENES.map(r=>`<option value="${r.clave}" ${c?.regimen===r.clave?'selected':''}>${r.clave} - ${r.desc}</option>`).join('');
+  const cfdiSelect=USOS_CFDI.map(u=>`<option value="${u.clave}" ${c?.usoCfdi===u.clave?'selected':''}>${u.clave} - ${u.desc}</option>`).join('');
+  return`
+  ${renderHeader('🧾 Datos Fiscales',`Mesa ${S.currentOrder?.mesa} · ${fmt$(S.currentOrder?.monto)}`)}
+  <div class="screen" style="padding-top:16px;">
+    <div class="step-indicator"><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div></div>
+    ${!c?`
+    <div class="card">
+      <div class="card-title">RFC del Cliente</div>
+      <div class="autocomplete-wrap">
+        <input id="rfc-input" type="text" placeholder="Escribe el RFC o razón social..." value="${S.rfcInput}"
+          oninput="onRfcInput(this.value)"
+          style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:16px;font-family:inherit;outline:none;"
+          autocomplete="off" autocapitalize="characters" spellcheck="false">
+        ${S.rfcSuggestions.length?`<div class="autocomplete-list">${S.rfcSuggestions.map(cl=>`
+          <div class="autocomplete-item" onclick="selectCliente('${cl.rfc}')">
+            <div class="rfc-code">${cl.rfc}</div>
+            <div class="rfc-name">${cl.razonSocial}</div>
+          </div>`).join('')}</div>`:''}
+      </div>
+      ${S.rfcInput.length>=3&&!S.rfcSuggestions.length?`
+        <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="useNewRfc()">
+          + Usar "${S.rfcInput.toUpperCase()}" como nuevo RFC
+        </button>`:''}
+    </div>
+    <div style="text-align:center;padding:8px 0;">
+      <button class="btn btn-secondary btn-sm" onclick="S.screen='mesero';render()">← Cambiar datos de mesa</button>
+    </div>
+    `:`
+    ${S.isNewCliente
+      ?'<div class="new-client-banner">✨ Nuevo cliente — sus datos se guardarán automáticamente</div>'
+      :'<div style="background:rgba(96,165,250,.08);border:1px solid rgba(96,165,250,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--blue);margin-bottom:4px;">✏️ Datos prellenados — revisa que sean correctos y edita si algo cambió</div>'}
+    <div class="card">
+      <div class="card-title">
+        <span>Datos Fiscales</span>
+        ${S.isNewCliente
+          ?'<span style="color:var(--purple);font-size:11px;">✦ Nuevo cliente</span>'
+          :'<span style="color:var(--blue);font-size:11px;">✏️ Edita si hay un error</span>'}
+      </div>
+      <div class="field">
+        <label>RFC</label>
+        <input type="text" value="${c.rfc}" disabled style="background:var(--surface);opacity:.7;width:100%;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-size:16px;font-family:inherit;">
+      </div>
+      <div class="field">
+        <label>Razón Social *</label>
+        <input id="cli-razonSocial" type="text" placeholder="Nombre o empresa" value="${c.razonSocial||''}" autocomplete="off" autocapitalize="words" oninput="markClienteModificado()">
+      </div>
+      <div class="field">
+        <label>Régimen Fiscal *</label>
+        <select id="cli-regimen" onchange="markClienteModificado()"><option value="">Seleccionar...</option>${regSelect}</select>
+      </div>
+      <div class="field">
+        <label>Uso de CFDI *</label>
+        <select id="cli-usoCfdi" onchange="markClienteModificado()"><option value="">Seleccionar...</option>${cfdiSelect}</select>
+      </div>
+      <div class="field">
+        <label>Email de confirmación *</label>
+        <input id="cli-email" type="email" inputmode="email" placeholder="correo@ejemplo.com" value="${c.email||''}" autocomplete="email" oninput="markClienteModificado()">
+      </div>
+      ${!S.isNewCliente&&S.clienteModificado?`
+      <div style="background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--yellow);margin-bottom:10px;">
+        💾 Los datos corregidos se actualizarán en el sistema al confirmar
+      </div>`:''}
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="btn btn-secondary" style="flex:0 0 auto;" onclick="cancelCliente()">← RFC</button>
+        <button class="btn btn-primary" style="flex:1;" onclick="goToConfirm()">Revisar →</button>
+      </div>
+    </div>`}
+  </div>`;
+}
+
+function onRfcInput(val){
+  S.rfcInput=val.toUpperCase();S.currentCliente=null;S.isNewCliente=false;S.clienteModificado=false;
+  S.rfcSuggestions=val.length>=3?S.clientes.filter(c=>
+    c.rfc.toLowerCase().includes(val.toLowerCase())||
+    c.razonSocial.toLowerCase().includes(val.toLowerCase())).slice(0,6):[];
+  // Actualiza SOLO el dropdown, sin tocar el input — el teclado no se baja
+  _updateRfcDropdown();
+}
+
+function _updateRfcDropdown(){
+  const wrap=document.querySelector('.autocomplete-wrap');
+  if(!wrap)return;
+
+  // Actualizar dropdown de sugerencias
+  let list=wrap.querySelector('.autocomplete-list');
+  if(S.rfcSuggestions.length){
+    if(!list){list=document.createElement('div');list.className='autocomplete-list';wrap.appendChild(list);}
+    list.innerHTML=S.rfcSuggestions.map(cl=>`
+      <div class="autocomplete-item" onclick="selectCliente('${cl.rfc}')">
+        <div class="rfc-code">${cl.rfc}</div>
+        <div class="rfc-name">${cl.razonSocial}</div>
+      </div>`).join('');
+  } else {
+    if(list)list.remove();
+  }
+
+  // Actualizar botón "Usar como nuevo RFC"
+  const card=wrap.closest('.card');if(!card)return;
+  let btn=card.querySelector('.btn-nuevo-rfc');
+  if(S.rfcInput.length>=3&&!S.rfcSuggestions.length&&!S.currentCliente){
+    if(!btn){
+      btn=document.createElement('button');
+      btn.className='btn btn-secondary btn-sm btn-nuevo-rfc';
+      btn.style.cssText='margin-top:10px;width:100%;';
+      btn.onclick=useNewRfc;
+      wrap.after(btn);
+    }
+    btn.textContent='+ Usar "'+S.rfcInput+'" como nuevo RFC';
+  } else {
+    if(btn)btn.remove();
+  }
+}
+function selectCliente(rfc){
+  const c=S.clientes.find(cl=>cl.rfc===rfc);if(!c)return;
+  S.rfcInput=rfc;S.rfcSuggestions=[];S.currentCliente={...c};S.isNewCliente=false;S.clienteModificado=false;render();
+}
+function useNewRfc(){
+  const rfc=S.rfcInput.toUpperCase().trim();if(!rfc){toast('Ingresa un RFC',1);return;}
+  S.rfcSuggestions=[];S.currentCliente={rfc,razonSocial:'',regimen:'',usoCfdi:'',email:'',id:''};S.isNewCliente=true;render();
+}
+function cancelCliente(){S.currentCliente=null;S.isNewCliente=false;S.rfcInput='';S.rfcSuggestions=[];S.clienteModificado=false;render();}
+function markClienteModificado(){if(!S.isNewCliente)S.clienteModificado=true;}
+function collectClienteForm(){
+  const c=S.currentCliente;
+  return{...c,
+    razonSocial:document.getElementById('cli-razonSocial')?.value.trim()||c.razonSocial,
+    regimen:document.getElementById('cli-regimen')?.value||c.regimen,
+    usoCfdi:document.getElementById('cli-usoCfdi')?.value||c.usoCfdi,
+    email:document.getElementById('cli-email')?.value.trim()||c.email};
+}
+function goToConfirm(){
+  const c=collectClienteForm();
+  if(!c.razonSocial){toast('Ingresa la Razón Social',1);return;}
+  if(!c.regimen){toast('Selecciona el Régimen Fiscal',1);return;}
+  if(!c.usoCfdi){toast('Selecciona el Uso de CFDI',1);return;}
+  if(!c.email||!c.email.includes('@')){toast('Ingresa un email válido',1);return;}
+  S.currentCliente=c;S.screen='confirm';render();
+}
+
+// ── PIN mesero para corregir datos de mesa desde confirm
+function abrirPinMesero(){S.showMeseroPin=true;S.meseroPinBuf='';render();}
+function cerrarPinMesero(){S.showMeseroPin=false;S.meseroPinBuf='';render();}
+function meseroPinKey(k){
+  if(S.meseroPinBuf.length>=4)return;
+  S.meseroPinBuf+=k;
+  // Actualizar solo los puntos del PIN sin render completo
+  const dots=document.querySelectorAll('#mesero-pin-dots .pin-dot');
+  dots.forEach((d,i)=>d.classList.toggle('filled',i<S.meseroPinBuf.length));
+  if(S.meseroPinBuf.length===4){
+    const userPin=S.user?.pin||'';
+    if(userPin&&S.meseroPinBuf===userPin){
+      S.showMeseroPin=false;S.meseroPinBuf='';
+      S.screen='mesero';render();
+    }else{
+      toast('PIN incorrecto',1);
+      setTimeout(()=>{S.meseroPinBuf='';
+        const ds=document.querySelectorAll('#mesero-pin-dots .pin-dot');
+        ds.forEach(d=>d.classList.remove('filled'));
+      },400);
+    }
+  }
+}
+function meseroPinDel(){
+  if(!S.meseroPinBuf.length)return;
+  S.meseroPinBuf=S.meseroPinBuf.slice(0,-1);
+  const dots=document.querySelectorAll('#mesero-pin-dots .pin-dot');
+  dots.forEach((d,i)=>d.classList.toggle('filled',i<S.meseroPinBuf.length));
+}
+
+// ── SCREEN: CONFIRM
+function renderConfirm(){
+  const c=S.currentCliente,o=S.currentOrder;
+  const regimenDesc=REGIMENES.find(r=>r.clave===c?.regimen)?.desc||c?.regimen;
+  const cfdiDesc=USOS_CFDI.find(u=>u.clave===c?.usoCfdi)?.desc||c?.usoCfdi;
+  const pagoInfo=TIPOS_PAGO.find(p=>p.clave===o?.tipoPago);
+  return`
+  ${renderHeader('✅ Confirmar','Revisa todos los datos')}
+  <div class="screen" style="padding-top:16px;">
+    <div class="step-indicator"><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div></div>
+
+    <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--yellow);">
+      ⚠️ Revisa que todos los datos sean correctos antes de confirmar
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🍽️ Datos de la Mesa</span>
+        <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="abrirPinMesero()">🔒 Corregir</button>
+      </div>
+      <div class="data-summary" style="margin-bottom:0;">
+        <div class="ds-row"><span class="ds-label">Mesa</span><span class="ds-value">${o?.mesa}</span></div>
+        <div class="ds-row"><span class="ds-label">Monto</span><span class="ds-value" style="color:var(--green);font-size:18px;">${fmt$(o?.monto)}</span></div>
+        <div class="ds-row" style="border:none;"><span class="ds-label">Tipo de Pago</span><span class="ds-value">${pagoInfo?.icon||''} ${o?.tipoPago}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>🧾 Datos Fiscales</span>
+        <button class="btn btn-sm btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="S.screen='cliente';render()">✏️ Corregir</button>
+      </div>
+      <div class="data-summary" style="margin-bottom:0;">
+        <div class="ds-row"><span class="ds-label">RFC</span><span class="ds-value">${c?.rfc}</span></div>
+        <div class="ds-row"><span class="ds-label">Razón Social</span><span class="ds-value">${c?.razonSocial}</span></div>
+        <div class="ds-row"><span class="ds-label">Régimen</span><span class="ds-value" style="font-size:12px;">${c?.regimen} · ${regimenDesc}</span></div>
+        <div class="ds-row"><span class="ds-label">Uso CFDI</span><span class="ds-value" style="font-size:12px;">${c?.usoCfdi} · ${cfdiDesc}</span></div>
+        <div class="ds-row" style="border:none;"><span class="ds-label">Email</span><span class="ds-value" style="font-size:13px;">${c?.email}</span></div>
+      </div>
+    </div>
+
+    ${S.clienteModificado?`
+    <div style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--yellow);margin-bottom:12px;">
+      💾 Los datos fiscales corregidos se actualizarán en el sistema
+    </div>`:''}
+
+    <button class="btn btn-success btn-full" onclick="submitSolicitud()" style="margin-bottom:8px;">✅ Todo está correcto — Confirmar</button>
+    <div style="font-size:12px;color:var(--muted);text-align:center;">📧 Se enviará confirmación a ${c?.email}</div>
+  </div>
+
+  ${S.showMeseroPin?`
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:300;display:flex;align-items:flex-end;justify-content:center;">
+    <div style="background:var(--surface);border-radius:20px 20px 0 0;padding:24px 20px 32px;width:100%;max-width:440px;">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="font-size:20px;font-weight:700;">🔒 PIN del Mesero</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:4px;">Ingresa tu PIN para modificar los datos de mesa</div>
+      </div>
+      <div id="mesero-pin-dots" class="pin-display" style="margin-bottom:20px;">
+        ${[0,1,2,3].map(i=>`<div class="pin-dot${S.meseroPinBuf.length>i?' filled':''}"></div>`).join('')}
+      </div>
+      <div class="pin-pad">
+        ${['1','2','3','4','5','6','7','8','9','','0','⌫'].map(k=>
+          k===''?`<div></div>`:
+          k==='⌫'?`<button class="pin-key del" onclick="meseroPinDel()">⌫</button>`:
+          `<button class="pin-key" onclick="meseroPinKey('${k}')">${k}</button>`
+        ).join('')}
+      </div>
+      <button class="btn btn-secondary btn-full" style="margin-top:14px;" onclick="cerrarPinMesero()">Cancelar</button>
+    </div>
+  </div>`:''}
+`;
+}
+
+// ── SUBMIT
+async function submitSolicitud(){
+  const c=S.currentCliente,o=S.currentOrder;
+  if(!c||!o){toast('Datos incompletos',1);return;}
+  showWorking();
+  const n=now();
+  const solId=nextId('SOL',S.solicitudes);
+  // Columns: ID, Fecha, Hora, Mesa, Monto, TipoPago, RFC, RazonSocial, Regimen, UsoCFDI, Email, Status, Mesero, Notas
+  // Construir descripción completa para almacenar en el Sheet (ej: "626 - Régimen Simplificado de Confianza")
+  const regimenDesc=REGIMENES.find(r=>r.clave===c.regimen)?.desc||'';
+  const usoDesc=USOS_CFDI.find(u=>u.clave===c.usoCfdi)?.desc||'';
+  const regimenFull=regimenDesc?`${c.regimen} - ${regimenDesc}`:c.regimen;
+  const usoFull=usoDesc?`${c.usoCfdi} - ${usoDesc}`:c.usoCfdi;
+  const solRow=[solId,n.date,n.time,o.mesa,o.monto,o.tipoPago,c.rfc,c.razonSocial,regimenFull,usoFull,c.email,'Pendiente',o.mesero,''];
+  const items=[{_type:'append',sheet:'🧾 Solicitudes',values:solRow}];
+  // Client: new or update
+  const existing=S.clientes.find(cl=>cl.rfc===c.rfc);
+  if(S.isNewCliente||!existing){
+    const cliId=nextId('CLI',S.clientes);
+    items.push({_type:'append',sheet:'👥 Clientes',values:[cliId,c.rfc,c.razonSocial,regimenFull,usoFull,c.email,n.date]});
+    // Local state usa solo código para que los selects funcionen correctamente
+    S.clientes.push({id:cliId,rfc:c.rfc,razonSocial:c.razonSocial,regimen:c.regimen,usoCfdi:c.usoCfdi,email:c.email,ultimaSol:n.date,_row:9999});
+  }else{
+    items.push({_type:'updateCliente',rfc:c.rfc,data:{ultimaSol:n.date,razonSocial:c.razonSocial,regimen:regimenFull,usoCfdi:usoFull,email:c.email}});
+    const idx=S.clientes.findIndex(cl=>cl.rfc===c.rfc);
+    // Local state usa solo código
+    if(idx>=0)S.clientes[idx]={...S.clientes[idx],razonSocial:c.razonSocial,regimen:c.regimen,usoCfdi:c.usoCfdi,email:c.email,ultimaSol:n.date};
+  }
+  // Queue email confirmation
+  items.push({_type:'sendConfirmation',solId});
+  // Optimistic local state
+  S.solicitudes.push({id:solId,fecha:n.date,hora:n.time,mesa:o.mesa,monto:o.monto,tipoPago:o.tipoPago,rfc:c.rfc,razonSocial:c.razonSocial,regimen:c.regimen,usoCfdi:c.usoCfdi,email:c.email,status:'Pendiente',mesero:o.mesero,notas:'',_row:9999});
+  logAction('Solicitud creada',solId+' RFC:'+c.rfc+' Mesa:'+o.mesa,'solicitud');
+  SyncQueue.add(items,ok=>{if(!ok)toast('⚠️ Guardado en cola — se sincronizará pronto',1)});
+  // Save email for success screen before clearing
+  const emailGuardado=c.email;
+  hideWorking();
+  S.screen='success';
+  S._lastEmail=emailGuardado;
+  S.currentOrder=null;
+  render();
+}
+
+// ── SCREEN: SUCCESS
+function renderSuccess(){
+  return`
+  ${renderHeader('🧾 Facturas','')}
+  <div class="screen" style="padding-top:32px;text-align:center;">
+    <div class="step-indicator"><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot done"></div></div>
+    <div class="success-icon">✅</div>
+    <div class="success-title">¡Solicitud Enviada!</div>
+    <div class="success-sub">La solicitud de factura fue registrada exitosamente.<br>Se enviará confirmación al email del cliente.</div>
+    <div class="card" style="text-align:left;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:24px;">📧</span>
+        <div><div style="font-size:12px;color:var(--muted);">Confirmación enviada a</div><div style="font-size:15px;font-weight:600;">${S._lastEmail||''}</div></div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="newSolicitud()" style="margin-bottom:12px;">+ Nueva Solicitud</button>
+    ${S.user?.rol==='admin'||S.user?.rol==='contable'?`<button class="btn btn-secondary btn-full" onclick="S.screen='admin';S.tab='solicitudes';render()">Ver Panel Admin</button>`:''}
+    <button class="btn btn-secondary btn-full" onclick="logout()" style="margin-top:8px;">Cerrar Sesión</button>
+  </div>`;
+}
+
+function newSolicitud(){
+  S.currentCliente=null;S.currentOrder=null;S.rfcInput='';S.rfcSuggestions=[];S.isNewCliente=false;
+  S.screen='mesero';render();
+}
+
+// ── SCREEN: ADMIN
+function renderAdmin(){
+  return`
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;">
+    <img src="${LOGO}" class="app-logo" onerror="this.outerHTML='<span style=font-size:20px>🧾</span>'">
+    <div style="flex:1;"><div style="font-size:16px;font-weight:700;">Panel Admin</div><div style="font-size:12px;color:var(--muted);">${S.user?.nombre} · ${rolLabel(S.user?.rol)}</div></div>
+    <div class="status-dot" style="background:${SyncQueue.pending>0?'var(--yellow)':S.connected?'var(--green)':'var(--red)'}"></div>
+    <button class="btn btn-sm btn-secondary" onclick="Sheets.loadAll()" title="Recargar">↻</button>
+    <button class="btn btn-sm btn-secondary" onclick="logout()">Salir</button>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn ${S.tab==='solicitudes'?'active':''}" onclick="S.tab='solicitudes';S.adminSearch='';render()">🧾 Solicitudes <span style="font-size:11px;color:var(--muted);">(${S.solicitudes.filter(s=>s.status==='Pendiente').length})</span></button>
+    <button class="tab-btn ${S.tab==='clientes'?'active':''}" onclick="S.tab='clientes';S.adminSearch='';render()">👥 Clientes</button>
+    ${S.user?.rol==='admin'?`<button class="tab-btn ${S.tab==='usuarios'?'active':''}" onclick="S.tab='usuarios';render()">👤 Usuarios</button>`:''}
+    <button class="tab-btn ${S.tab==='bitacora'?'active':''}" onclick="S.tab='bitacora';render()">📜 Bitácora</button>
+    ${S.user?.rol==='mesero'?`<button class="tab-btn" onclick="S.screen='mesero';render()">← Nueva Sol.</button>`:''}
+  </div>
+  <div class="scroll-area">
+    ${S.tab==='solicitudes'?renderAdminSolicitudes():''}
+    ${S.tab==='clientes'?renderAdminClientes():''}
+    ${S.tab==='usuarios'?renderAdminUsuarios():''}
+    ${S.tab==='bitacora'?renderAdminBitacora():''}
+  </div>`;
+}
+
+function renderAdminSolicitudes(){
+  const statuses=['all','Pendiente','Procesada','Error','Reenviada'];
+  let sols=S.solicitudes.slice().reverse();
+  if(S.filterStatus!=='all')sols=sols.filter(s=>s.status===S.filterStatus);
+  if(S.adminSearch){const q=S.adminSearch.toLowerCase();sols=sols.filter(s=>s.rfc.toLowerCase().includes(q)||s.razonSocial.toLowerCase().includes(q)||s.mesa.toLowerCase().includes(q)||s.id.toLowerCase().includes(q)||s.tipoPago.toLowerCase().includes(q));}
+  return`
+  <div class="filter-bar">
+    ${statuses.map(st=>`<button class="filter-chip ${S.filterStatus===st?'active':''}" onclick="S.filterStatus='${st}';render()">${st==='all'?'Todas':st} ${st!=='all'?`(${S.solicitudes.filter(s=>s.status===st).length})`:''}</button>`).join('')}
+  </div>
+  <input type="text" class="search-input" placeholder="🔍 Buscar RFC, razón social, mesa, pago..." value="${S.adminSearch}" oninput="S.adminSearch=this.value;render()">
+  <div class="sol-list">
+    ${sols.length===0?'<div class="empty-state"><div class="icon">🧾</div><p>Sin solicitudes</p></div>':
+      sols.map(s=>`<div class="sol-card">
+        <div class="sol-card-header">
+          <div><div class="sol-id">${s.id} · ${s.fecha} ${s.hora}</div><div class="sol-rfc">${s.rfc}</div><div class="sol-razon">${s.razonSocial}</div></div>
+          ${statusBadge(s.status)}
+        </div>
+        <div class="sol-row">
+          <div class="sol-field"><span>Mesa</span>${s.mesa}</div>
+          <div class="sol-field"><span>Monto</span><strong style="color:var(--green)">${fmt$(s.monto)}</strong></div>
+          <div class="sol-field"><span>Pago</span>${s.tipoPago||'—'}</div>
+        </div>
+        <div class="sol-field" style="font-size:12px;color:var(--muted);margin-bottom:6px;">📧 ${s.email} · Régimen: ${s.regimen} · CFDI: ${s.usoCfdi} · Mesero: ${s.mesero}</div>
+        ${s.notas?`<div style="font-size:12px;color:var(--yellow);margin-bottom:6px;">📝 ${s.notas}</div>`:''}
+        <div class="sol-actions">
+          ${s.status==='Pendiente'?`<button class="btn btn-sm btn-success" onclick="cambiarStatus('${s.id}','Procesada')">✅ Procesada</button><button class="btn btn-sm btn-danger" onclick="cambiarStatus('${s.id}','Error')">❌ Error</button>`:''}
+          ${s.status==='Error'||s.status==='Reenviada'?`<button class="btn btn-sm btn-blue" onclick="reenviarConfirmacion('${s.id}')">📧 Reenviar</button>`:''}
+          ${s.status==='Procesada'?`<button class="btn btn-sm btn-secondary" onclick="reenviarConfirmacion('${s.id}')">📧 Reenviar</button>`:''}
+          <button class="btn btn-sm btn-secondary" onclick="verDetalle('${s.id}')">🔍 Detalle</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderAdminClientes(){
+  let clientes=S.clientes.slice().reverse();
+  if(S.adminSearch){const q=S.adminSearch.toLowerCase();clientes=clientes.filter(c=>c.rfc.toLowerCase().includes(q)||c.razonSocial.toLowerCase().includes(q)||c.email.toLowerCase().includes(q));}
+  return`
+  <input type="text" class="search-input" placeholder="🔍 Buscar RFC, razón social, email..." value="${S.adminSearch}" oninput="S.adminSearch=this.value;render()">
+  <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${S.clientes.length} clientes registrados</div>
+  ${clientes.length===0?'<div class="empty-state"><div class="icon">👥</div><p>Sin clientes</p></div>':
+    clientes.map(c=>`<div class="cliente-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">
+        <div><div style="font-weight:700;font-size:15px;">${c.rfc}</div><div style="font-size:13px;color:var(--muted);">${c.razonSocial}</div></div>
+        <div style="font-size:12px;color:var(--muted);">${c.ultimaSol}</div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);">📧 ${c.email}<br>📋 ${c.regimen} · ${c.usoCfdi}</div>
+    </div>`).join('')}`;
+}
+
+function renderAdminUsuarios(){
+  return`
+  <div style="margin-bottom:16px;"><button class="btn btn-primary btn-sm" onclick="showNewUsuario()">+ Nuevo Usuario</button></div>
+  ${S.usuarios.length===0?'<div class="empty-state"><div class="icon">👤</div><p>Sin usuarios configurados</p></div>':
+    S.usuarios.map(u=>`<div class="cliente-card" style="display:flex;align-items:center;gap:12px;">
+      <div class="user-avatar" style="width:36px;height:36px;font-size:16px;flex-shrink:0;">${(u.nombre[0]||'?').toUpperCase()}</div>
+      <div style="flex:1;"><div style="font-weight:600;">${u.nombre}</div><div style="font-size:12px;color:var(--muted);">${rolLabel(u.rol)} · PIN: ${'•'.repeat(u.pin?.length||0)}</div></div>
+      <span class="badge ${u.activo?'badge-green':'badge-muted'}">${u.activo?'Activo':'Inactivo'}</span>
+    </div>`).join('')}`;
+}
+
+function renderAdminBitacora(){
+  const bit=S.bitacora.slice().reverse();
+  return`
+  <div style="font-size:13px;color:var(--muted);margin-bottom:12px;">${bit.length} registros</div>
+  ${bit.length===0?'<div class="empty-state"><div class="icon">📜</div><p>Sin registros</p></div>':
+    bit.slice(0,100).map(b=>`<div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:13px;font-weight:600;">${b.accion}</div>
+          <div style="font-size:12px;color:var(--muted);">${b.usuario} · ${b.fecha} ${b.hora}</div>
+          ${b.detalle?`<div style="font-size:12px;color:var(--muted);margin-top:2px;">${b.detalle}</div>`:''}
+        </div>
+        <span class="badge badge-muted" style="font-size:10px;">${b.tipo}</span>
+      </div>
+    </div>`).join('')}`;
+}
+
+// ── ADMIN ACTIONS
+function cambiarStatus(solId,newStatus){
+  const sol=S.solicitudes.find(s=>s.id===solId);if(!sol)return;
+  const prev=sol.status;sol.status=newStatus;
+  SyncQueue.add([{_type:'updateStatus',solId,status:newStatus,notas:''}],ok=>{if(!ok){sol.status=prev;render();}});
+  logAction('Status actualizado',solId+': '+prev+' → '+newStatus,'status');
+  toast(newStatus==='Procesada'?'✅ Marcada como procesada':'❌ Marcada como error');render();
+}
+
+function reenviarConfirmacion(solId){
+  const sol=S.solicitudes.find(s=>s.id===solId);if(!sol)return;
+  sol.status='Reenviada';
+  SyncQueue.add([{_type:'updateStatus',solId,status:'Reenviada',notas:'Reenvío '+now().date},{_type:'sendConfirmation',solId}]);
+  logAction('Confirmación reenviada',solId+' → '+sol.email,'reenvio');
+  toast('📧 Confirmación reenviada');render();
+}
+
+function verDetalle(solId){
+  const s=S.solicitudes.find(s=>s.id===solId);if(!s)return;
+  const rd=REGIMENES.find(r=>r.clave===s.regimen)?.desc||s.regimen;
+  const cd=USOS_CFDI.find(u=>u.clave===s.usoCfdi)?.desc||s.usoCfdi;
+  alert(`📄 ${s.id}\n\nMesa: ${s.mesa}\nMonto: ${fmt$(s.monto)}\nTipo de Pago: ${s.tipoPago}\n\nRFC: ${s.rfc}\nRazón Social: ${s.razonSocial}\nRégimen: ${s.regimen} - ${rd}\nUso CFDI: ${s.usoCfdi} - ${cd}\nEmail: ${s.email}\n\nStatus: ${s.status}\nMesero: ${s.mesero}\nFecha: ${s.fecha} ${s.hora}\nNotas: ${s.notas||'Ninguna'}`);
+}
+
+function showNewUsuario(){
+  const nombre=prompt('Nombre del usuario:');if(!nombre)return;
+  const pin=prompt('PIN (4 dígitos):');if(!pin||pin.length!==4||!/^\d+$/.test(pin)){toast('PIN inválido — debe ser 4 dígitos',1);return;}
+  const rolInput=prompt('Rol:\n1 = mesero\n2 = admin\n3 = contable','1');
+  const roles=['mesero','admin','contable'];
+  const rol=roles[parseInt(rolInput)-1]||'mesero';
+  const id=nextId('USR',S.usuarios);
+  S.usuarios.push({id,nombre,pin,rol,activo:true,_row:9999});
+  SyncQueue.add([{_type:'append',sheet:'👤 Usuarios',values:[id,nombre,pin,rol,'true']}]);
+  logAction('Usuario creado',nombre+' ('+rol+')','usuario');
+  toast('✅ Usuario creado');render();
+}
+
+// ── UTILS
+function statusBadge(status){
+  const m={Pendiente:'badge-yellow',Procesada:'badge-green',Error:'badge-red',Reenviada:'badge-blue'};
+  return`<span class="badge ${m[status]||'badge-muted'}">${status}</span>`;
+}
+function renderHeader(title,sub){
+  return`<div class="header">
+    <img src="${LOGO}" class="app-logo" onerror="this.outerHTML='<span style=font-size:22px>🧾</span>'">
+    <div style="flex:1;"><div class="header-title">${title}</div>${sub?`<div class="header-sub">${sub}</div>`:''}</div>
+    <div class="status-dot" style="background:${SyncQueue.pending>0?'var(--yellow)':S.connected?'var(--green)':'var(--red)'}" title="${SyncQueue.pending>0?SyncQueue.pending+' pendientes':S.connected?'Conectado':'Desconectado'}"></div>
+  </div>`;
+}
+function logout(){
+  S.user=null;S.selectedUser=null;S.pinInput='';S.currentOrder=null;S.currentCliente=null;
+  S.screen='login';render();
+}
+
+// ── INIT
+(function init(){
+  const cfg=loadConfig();
+  if(cfg&&cfg.sheetId&&cfg.apiKey&&cfg.scriptUrl){S.config=cfg;S.screen='login';Sheets.loadAll();}
+  else{S.screen='setup';}
+  render();
+})();
+</script>
+</body>
+</html>
