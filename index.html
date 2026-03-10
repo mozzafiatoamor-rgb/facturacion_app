@@ -951,7 +951,7 @@ function renderAdminSolicitudes(){
   <div class="filter-bar">
     ${statuses.map(st=>`<button class="filter-chip ${S.filterStatus===st?'active':''}" onclick="S.filterStatus='${st}';render()">${st==='all'?'Todas':st} ${st!=='all'?`(${S.solicitudes.filter(s=>s.status===st).length})`:''}</button>`).join('')}
   </div>
-  <input type="text" class="search-input" placeholder="🔍 Buscar RFC, razón social, mesa, pago..." value="${S.adminSearch}" oninput="S.adminSearch=this.value;render()">
+  <input type="text" class="search-input" id="admin-search-input" placeholder="🔍 Buscar RFC..." value="${S.adminSearch}" oninput="S.adminSearch=this.value; filterAdminList()">
   <div class="sol-list">
     ${sols.length===0?'<div class="empty-state"><div class="icon">🧾</div><p>Sin solicitudes</p></div>':
       sols.map(s=>`<div class="sol-card">
@@ -1081,6 +1081,19 @@ function logout(){
   else{S.screen='setup';}
   render();
 })();
+  // Función para filtrar sin recargar la pantalla y evitar que se baje el teclado
+function filterAdminList() {
+  const query = S.adminSearch.toLowerCase();
+  // Selecciona tanto las tarjetas de solicitudes como las de clientes
+  const cards = document.querySelectorAll('.sol-card, .cliente-card');
+  
+  cards.forEach(card => {
+    // Busca el texto dentro de la tarjeta
+    const text = card.innerText.toLowerCase();
+    // Si el texto coincide, la muestra; si no, la oculta
+    card.style.display = text.includes(query) ? 'block' : 'none';
+  });
+}
 </script>
 </body>
 </html>
